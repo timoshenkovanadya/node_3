@@ -1,10 +1,16 @@
-const express = require('express');
+const express = require("express");
 const app = express();
 
-app.get('/', (req, res) => {
-  res.send('Hello World!');
+
+const filmsRouter = require("./routes/router");
+app.use(express.json());
+
+app.use("/api/films", filmsRouter);
+
+app.get("/", (req, res) => {
+  res.send("Hello World!");
 });
 
 app.listen(3000, function () {
-  console.log('Running');
+  console.log("Running");
 });
