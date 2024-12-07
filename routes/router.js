@@ -2,7 +2,13 @@ const express = require("express");
 const fs = require("fs");
 const path = require("path");
 const filePath = path.join(__dirname, "..", "top250.json");
-const { helpers, checkIsNumber } = require("../helpers");
+const {
+  checkId,
+  checkNumber,
+  checkRating,
+  checkString,
+  checkYear,
+} = require("../helpers");
 
 const filmsRouter = express.Router();
 
@@ -21,7 +27,7 @@ filmsRouter.get("/read", (req, res, next) => {
       return next(new Error("Error of file riding"));
     }
     const { body } = req;
-    if (!checkIsNumber(body.id)) {
+    if (!checkId(body.id)) {
       return next({ status: 400, message: "id should be number or string" });
     }
     const arrData = JSON.parse(data);
@@ -57,17 +63,26 @@ filmsRouter.post("/create", (req, res, next) => {
       poster,
       position,
     };
-      
-    films.push(newFilm);
+
+    if (
+      !checkString(title) ||
+      !checkRating(rating) ||
+      !checkYear(year) ||
+      !checkNumber(budget) ||
+      !checkNumber(gross) ||
+      !checkString(poster) ||
+      !checkNumber(position)
+    ) {
+        return next({ status: 400, message: "Input data is empty or has invalid value" });
+    }
+      films.push(newFilm);
     films.sort((a, b) => a.position - b.position);
     console.log(films);
-    
-     res.status(201).json(newFilm);
+
+    res.status(201).json(newFilm);
     fs.writeFile(filePath, JSON.stringify(films), (err) => {
-        if (err) throw err;
-      });
-    
-   
+      if (err) throw err;
+    });
   });
 });
 
