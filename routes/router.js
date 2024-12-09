@@ -45,7 +45,7 @@ filmsRouter.post("/create", (req, res, next) => {
     if (err) {
       return next(new Error("Error of file riding"));
     }
-    const { title, rating, year, budget, gross, poster, position } = req.body;
+    let { title, rating, year, budget, gross, poster, position } = req.body;
     if (
       !title ||
       !checkString(title) ||
@@ -68,6 +68,9 @@ filmsRouter.post("/create", (req, res, next) => {
       });
     } else {
       const films = JSON.parse(data);
+      if (position > films.length) {
+        position = films.length + 1;
+      }
       const newId = Math.max(...films.map((film) => film.id)) + 1;
       const newFilm = {
         id: newId,
@@ -99,8 +102,7 @@ filmsRouter.post("/update", (req, res, next) => {
     if (err) {
       return next(new Error("Error of file riding"));
     }
-    const { id, title, rating, year, budget, gross, poster, position } =
-      req.body;
+    let { id, title, rating, year, budget, gross, poster, position } = req.body;
     if (
       (title && !checkString(title)) ||
       (rating && !checkRating(rating)) ||
@@ -116,14 +118,23 @@ filmsRouter.post("/update", (req, res, next) => {
       });
     } else {
       const films = JSON.parse(data);
-      const currentElement = films.find(element => element.id === id);
+      const currentElement = films.find((element) => element.id === id);
       const currentPosition = currentElement.position;
+      if (position > films.length) {
+        films.forEach((film) => {
+          if (film.position > currentPosition) {
+            film.position -= 1;
+          }
+        });
+        position = films.length;
+      }
+
       films.forEach((film) => {
         if (film.position === position) {
           film.position = currentPosition;
         }
       });
-     const updatedFilms = films.map((item) =>
+      const updatedFilms = films.map((item) =>
         item.id != id
           ? item
           : {
@@ -148,32 +159,33 @@ filmsRouter.post("/update", (req, res, next) => {
 });
 
 filmsRouter.post("/delete", (req, res, next) => {
-    fs.readFile(filePath, "utf8", (err, data) => {
-      if (err) {
-        return next(new Error("Error of file riding"));
-      }
-      const { body } = req;
-      if (!checkId(body.id)) {
-        return next({ status: 400, message: "id should be number or string" });
-      }
-      let films = JSON.parse(data);
-      const curFilm = films.findIndex((element) => element.id == body.id);
-      if (curFilm) {
-         films.forEach((film) => {
-            if (film.position > films[curFilm].position) {
-              film.position -= 1;
-            }
-          });
-        films.splice(curFilm,1);       
-        res.status(201).json(`Film with id=${body.id} deleted`);
-        fs.writeFile(filePath, JSON.stringify(films), (err) => {
-          if (err) throw err;
-        });
-      } else {
-        return next({ status: 404, message: "No film with such id" });
-      }
-    });
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) {
+      return next(new Error("Error of file riding"));
+    }
+    const { body } = req;
+    if (!checkId(body.id)) {
+      return next({ status: 400, message: "id should be number or string" });
+    }
+    let films = JSON.parse(data);
+    const curFilm = films.find((element) => element.id == body.id);
+    const curIndex = films.indexOf(curFilm);
+
+    if (curFilm) {
+      films.forEach((film) => {
+        if (film.position > curFilm.position) {
+          film.position -= 1;
+        }
+      });
+      films.splice(curIndex, 1);
+      res.status(200).json(`Film with id=${body.id} deleted`);
+      fs.writeFile(filePath, JSON.stringify(films), (err) => {
+        if (err) throw err;
+      });
+    } else {
+      return next({ status: 404, message: "No film with such id" });
+    }
   });
-  
+});
 
 module.exports = filmsRouter;
