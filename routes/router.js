@@ -147,4 +147,33 @@ filmsRouter.post("/update", (req, res, next) => {
   });
 });
 
+filmsRouter.post("/delete", (req, res, next) => {
+    fs.readFile(filePath, "utf8", (err, data) => {
+      if (err) {
+        return next(new Error("Error of file riding"));
+      }
+      const { body } = req;
+      if (!checkId(body.id)) {
+        return next({ status: 400, message: "id should be number or string" });
+      }
+      let films = JSON.parse(data);
+      const curFilm = films.findIndex((element) => element.id == body.id);
+      if (curFilm) {
+         films.forEach((film) => {
+            if (film.position > films[curFilm].position) {
+              film.position -= 1;
+            }
+          });
+        films.splice(curFilm,1);       
+        res.status(201).json(`Film with id=${body.id} deleted`);
+        fs.writeFile(filePath, JSON.stringify(films), (err) => {
+          if (err) throw err;
+        });
+      } else {
+        return next({ status: 404, message: "No film with such id" });
+      }
+    });
+  });
+  
+
 module.exports = filmsRouter;
